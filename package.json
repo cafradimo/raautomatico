@@ -1,0 +1,33 @@
+<<<<<<< HEAD
+{
+  "name": "contador-ra",
+  "version": "1.0.0",
+  "description": "API para contador persistente de RAs",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^4.22.2",
+    "mongodb": "^7.5.0"
+  }
+}
+=======
+{
+  "name": "contador-ra",
+  "version": "1.0.0",
+  "description": "API para contador persistente de RAs",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js"
+  },
+  "dependencies": {
+    "cors": "^2.8.6",
+    "dotenv": "^17.4.2",
+    "express": "^4.22.2",
+    "mongodb": "^7.5.0"
+  }
+}
+>>>>>>> ea07b738c7842d7c838f05bdcce03f012483d047

@@ -1,0 +1,1386 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>Gerador de Requisição Administrativa - CREA-RJ</title>
+    <script src="https://unpkg.com/pdf-lib@1.17.1/dist/pdf-lib.min.js"></script>
+    <script src="https://unpkg.com/downloadjs@1.4.7"></script>
+    <style>
+        /* (todo o CSS do seu arquivo original, sem alterações) */
+        * { box-sizing: border-box; }
+        body {
+            font-family: 'Arial', sans-serif;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            min-height: 100vh;
+            background-color: #f5f5f5;
+        }
+        /* ========= LOGIN SCREEN ========= */
+        .login-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(135deg, #2c3e50 0%, #1a2632 100%);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 2000;
+            backdrop-filter: blur(2px);
+            -webkit-backdrop-filter: blur(2px);
+        }
+        .login-card {
+            background: white;
+            border-radius: 20px;
+            width: 90%;
+            max-width: 420px;
+            padding: 2rem 2rem 2.5rem;
+            box-shadow: 0 25px 50px -12px rgba(0,0,0,0.5);
+            text-align: center;
+            animation: fadeInUp 0.4s ease;
+        }
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .login-card img {
+            max-width: 220px;
+            margin-bottom: 1rem;
+        }
+        .login-card h2 {
+            color: #2c3e50;
+            font-size: 1.6rem;
+            margin: 0 0 0.25rem;
+        }
+        .login-sub {
+            color: #6c757d;
+            font-size: 0.85rem;
+            margin-bottom: 2rem;
+            border-bottom: 1px solid #e9ecef;
+            display: inline-block;
+            padding-bottom: 5px;
+        }
+        .input-group {
+            text-align: left;
+            margin-bottom: 1.5rem;
+        }
+        .input-group label {
+            display: block;
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: #2c3e50;
+            font-size: 0.9rem;
+        }
+        .input-group input {
+            width: 100%;
+            padding: 12px 15px;
+            border: 1px solid #ced4da;
+            border-radius: 12px;
+            font-size: 1rem;
+            transition: 0.2s;
+        }
+        .input-group input:focus {
+            border-color: #3498db;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(52,152,219,0.2);
+        }
+        .btn-login {
+            background: #3498db;
+            color: white;
+            border: none;
+            width: 100%;
+            padding: 12px;
+            font-size: 1rem;
+            font-weight: bold;
+            border-radius: 40px;
+            cursor: pointer;
+            transition: 0.2s;
+            margin-top: 10px;
+        }
+        .btn-login:hover {
+            background: #2c3e50;
+            transform: scale(1.01);
+        }
+        .error-login {
+            color: #e74c3c;
+            font-size: 0.85rem;
+            margin-top: 15px;
+            background: #fee2e2;
+            padding: 8px;
+            border-radius: 40px;
+            display: none;
+        }
+        /* ========= CONTEÚDO PRINCIPAL ========= */
+        #app-container {
+            display: none;
+            width: 100%;
+        }
+        .sidebar {
+            width: 250px;
+            background-color: #2c3e50;
+            color: white;
+            padding: 20px 0;
+            height: 100vh;
+            position: fixed;
+            overflow-y: auto;
+            z-index: 10;
+        }
+        .sidebar-header {
+            padding: 0 20px 20px;
+            border-bottom: 1px solid #34495e;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .logout-btn {
+            background: #c0392b;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 30px;
+            color: white;
+            font-size: 12px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .logout-btn:hover { background: #e74c3c; }
+        .sidebar h2 { margin: 0; font-size: 1.2em; }
+        .sidebar-menu {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+        .sidebar-menu li {
+            padding: 10px 20px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .sidebar-menu li:hover { background-color: #34495e; }
+        .sidebar-menu li.active { background-color: #3498db; }
+        .sidebar-section {
+            margin-top: 20px;
+            border-top: 1px solid #34495e;
+        }
+        .sidebar-section-title {
+            padding: 15px 20px 5px;
+            font-weight: bold;
+            font-size: 0.9em;
+            color: #bdc3c7;
+        }
+        .main-content {
+            margin-left: 250px;
+            flex: 1;
+            padding: 20px;
+            background-color: white;
+            min-height: 100vh;
+        }
+        .form-container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: white;
+            box-shadow: 0 0 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .form-group { margin-bottom: 15px; }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: bold;
+            color: #2c3e50;
+        }
+        .dynamic-field-label { color: #e74c3c !important; }
+        input, textarea, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 16px;
+        }
+        textarea { resize: vertical; }
+        .inline-fields {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        .inline-fields .form-group { flex: 1; min-width: 120px; }
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            transition: background-color 0.3s;
+            margin-top: 20px;
+        }
+        button:hover { background-color: #2980b9; }
+        .section-title {
+            font-size: 1.2em;
+            color: #2c3e50;
+            border-bottom: 2px solid #3498db;
+            padding-bottom: 5px;
+            margin-top: 30px;
+            margin-bottom: 15px;
+        }
+        .loading {
+            display: none;
+            margin-top: 20px;
+            text-align: center;
+            color: #3498db;
+        }
+        .error-message {
+            color: #e74c3c;
+            margin-top: 10px;
+            text-align: center;
+            display: none;
+        }
+        .agent-search {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            border-left: 4px solid #3498db;
+        }
+        .hint-text {
+            font-size: 12px;
+            color: #7f8c8d;
+            margin-top: 5px;
+        }
+        .agent-info {
+            background-color: #f8f9fa;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            border-left: 4px solid #3498db;
+        }
+        .agent-info p { margin: 5px 0; color: #2c3e50; }
+        .agent-info strong { color: #3498db; }
+        .logo-container {
+            text-align: center;
+            margin-bottom: 20px;
+        }
+        .logo-container img {
+            max-width: 350px;
+            height: auto;
+        }
+        .ra-number-container {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .ra-number-container input { flex: 1; }
+        .ra-number-container button {
+            margin: 0;
+            padding: 10px 15px;
+            background-color: #95a5a6;
+            width: auto;
+        }
+        .ra-number-container button:hover { background-color: #7f8c8d; }
+        .ra-suffix-hint {
+            font-size: 12px;
+            color: #7f8c8d;
+            margin-top: 5px;
+        }
+        .required-field::after {
+            content: " *";
+            color: #e74c3c;
+        }
+        select {
+            background-color: white;
+            cursor: pointer;
+        }
+        select:focus {
+            outline: none;
+            border-color: #3498db;
+            box-shadow: 0 0 0 2px rgba(52, 152, 219, 0.2);
+        }
+        .dynamic-fields-container {
+            background-color: #fef9e6;
+            padding: 15px;
+            border-radius: 8px;
+            margin: 20px 0;
+            border-left: 4px solid #e74c3c;
+        }
+        .dynamic-fields-container .form-group { margin-bottom: 12px; }
+        .preview-container {
+            margin-top: 15px;
+            background-color: #fff;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            padding: 12px;
+            font-family: 'Arial', sans-serif;
+        }
+        .preview-title {
+            font-weight: bold;
+            font-size: 13px;
+            color: #2c3e50;
+            margin-bottom: 10px;
+            border-left: 3px solid #e74c3c;
+            padding-left: 8px;
+        }
+        .preview-lines {
+            background-color: #fef9e6;
+            padding: 8px;
+            border-radius: 4px;
+        }
+        .preview-line {
+            font-family: 'Arial', sans-serif;
+            font-size: 11pt;
+            font-weight: bold;
+            color: #000;
+            margin-bottom: 8px;
+            line-height: 1.4;
+        }
+        .preview-line .text-only {
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+        .preview-empty-line {
+            border-bottom: 1px solid #000;
+            width: 100%;
+            height: 0;
+            margin-bottom: 8px;
+        }
+        .preview-note {
+            font-size: 11px;
+            color: #7f8c8d;
+            margin-top: 8px;
+            text-align: right;
+        }
+        .email-send-section {
+            background-color: #e8f4f8;
+            padding: 20px;
+            border-radius: 8px;
+            margin-top: 25px;
+            border-left: 4px solid #2ecc71;
+        }
+        .button-group {
+            display: flex;
+            gap: 15px;
+            flex-wrap: wrap;
+        }
+        .button-group button {
+            flex: 1;
+        }
+        .btn-secondary {
+            background-color: #2ecc71;
+        }
+        .btn-secondary:hover {
+            background-color: #27ae60;
+        }
+        @media (max-width: 768px) {
+            .sidebar { width: 100%; height: auto; position: relative; }
+            .main-content { margin-left: 0; }
+            .sidebar-menu li { display: inline-block; width: auto; }
+            .sidebar-header, .sidebar-section { text-align: center; }
+            .form-container { padding: 15px; }
+        }
+        .btn-reset-contador {
+            background-color: #e67e22;
+            margin-left: 10px;
+        }
+        .btn-reset-contador:hover {
+            background-color: #d35400;
+        }
+    </style>
+</head>
+<body>
+
+<!-- TELA DE LOGIN (idêntica) -->
+<div id="login-screen" class="login-overlay">
+    <div class="login-card">
+        <div class="logo-container">
+            <img src="10.png" alt="CREA-RJ" onerror="this.style.display='none'">
+        </div>
+        <h2>Sistema de Requisições</h2>
+        <div class="login-sub">CREA-RJ - Conselho Regional de Engenharia e Agronomia do Rio de Janeiro</div>
+        <div class="input-group">
+            <label>Matrícula</label>
+            <input type="text" id="login-matricula" placeholder="Ex: 496" autocomplete="off">
+        </div>
+        <div class="input-group">
+            <label>Senha</label>
+            <input type="password" id="login-senha" placeholder="Digite sua senha">
+        </div>
+        <button class="btn-login" id="btn-acessar-sistema">Acessar Sistema</button>
+        <div id="login-error" class="error-login">Matrícula ou senha inválidos</div>
+    </div>
+</div>
+
+<!-- APLICAÇÃO PRINCIPAL -->
+<div id="app-container">
+    <div class="sidebar">
+        <div class="sidebar-header">
+            <h2>Tipos de Requisições Administrativas</h2>
+            <button id="logout-sidebar-btn" class="logout-btn">Sair</button>
+        </div>
+        <ul class="sidebar-menu">
+            <li class="active" data-template="RA01_MANUTENCAO_PREDIAL" data-file="RA01_MANUTENCAO_PREDIAL.pdf" data-prefix="RA01">RA01 Manutenção Predial</li>
+            <li data-template="02_OBRA" data-file="RA02_OBRA.pdf" data-prefix="RA02">RA02 Obra</li>
+            <li data-template="02.1_OBRA" data-file="RA2.1_OBRA.pdf" data-prefix="RA2.1">RA2.1 Obra</li>
+            <li data-template="03_DILIGENCIA" data-file="RA03_DILIGENCIA.pdf" data-prefix="RA03">RA03 Diligência</li>
+            <li data-template="04_POSTO" data-file="RA04-POSTO.pdf" data-prefix="RA04">RA04 Posto de Combustível</li>
+            <li data-template="05_EMPRESA" data-file="RA05_EMPRESA.pdf" data-prefix="RA05">RA05 Empresa</li>
+            <li data-template="06_SHOPPING" data-file="RA06_SHOPPING.pdf" data-prefix="RA06">RA06 Shopping</li>
+            <li data-template="07_EVENTO" data-file="RA07_EVENTO.pdf" data-prefix="RA07">RA07 Evento</li>
+            <li data-template="08_MERCADO" data-file="RA08_MERCADO.pdf" data-prefix="RA08">RA08 Mercado</li>
+            <li data-template="09_HOSPITAL" data-file="RA09_HOSPITAL.pdf" data-prefix="RA09">RA09 Hospital</li>
+            <li data-template="10_RECEITUARIO" data-file="RA10_RECEITUARIO_AGRONOMICO.pdf" data-prefix="RA10">RA10 Receituário Agronômico</li>
+            <li data-template="11_BAR_RESTAURANTE" data-file="RA11_BAR_RESTAURANTE.pdf" data-prefix="RA11">RA11 Bares e Restaurantes</li>
+            <li data-template="12_HOTEL" data-file="RA12_HOTEL.pdf" data-prefix="RA12">RA12 Hotel</li>
+            <li data-template="13_AEROPORTO" data-file="RA13_AEROPORTO.pdf" data-prefix="RA13">RA13 Aeroporto</li>
+            <li data-template="14_INSTITUICAO_ENSINO" data-file="RA14_FACULDADE.pdf" data-prefix="RA14">RA14 Instituição de Ensino</li>
+            <li data-template="15_ATERRO" data-file="RA15_ATERRO.pdf" data-prefix="RA15">RA15 Aterro Sanitário</li>
+            <li data-template="16_AGRONOMIA" data-file="RA16_AGRONOMIA.pdf" data-prefix="RA16">RA16 Agronomia (Orientativo)</li>
+            <li data-template="17_ESTADIO" data-file="RA17_ESTADIO.pdf" data-prefix="RA17">RA17 Estádio</li>
+        </ul>
+        <div class="sidebar-section">
+            <div class="sidebar-section-title">ANEXOS</div>
+            <ul class="sidebar-menu">
+                <li data-anexo="servicos_tecnicos">Serviços Técnicos</li>
+                <li data-anexo="prestadores_servicos">Prestadores de Serviços</li>
+                <li data-anexo="laudos_vistorias">Laudos de Vistorias Estádios</li>
+                <li data-anexo="quadro_tecnicos">Quadro Técnico</li>                     
+            </ul>
+        </div>
+    </div>
+    <div class="main-content">
+        <div class="form-container">
+            <div class="logo-container"><img src="10.png" alt="Logo" onerror="this.style.display='none'"></div>
+            <h1 id="document-title">RA01 Manutenção Predial</h1>
+            <div class="form-section">
+                <div class="section-title">Identificação do Agente Fiscal</div>
+                <div class="agent-search">
+                    <div class="form-group">
+                        <label for="matricula-agente">Matrícula do Agente Fiscal (logado):</label>
+                        <input type="text" id="matricula-agente" readonly placeholder="Carregada via login" autocomplete="off">
+                        <div class="hint-text">Agente autenticado – dados bloqueados</div>
+                    </div>
+                </div>
+                <div id="agent-info" class="agent-info" style="display: none;">
+                    <p><strong>Agente:</strong> <span id="agent-name"></span></p>
+                    <p><strong>Matrícula:</strong> <span id="agent-matricula"></span></p>
+                    <p><strong>E-mail:</strong> <span id="agent-email"></span></p>
+                    <p><strong>Celular/WhatsApp:</strong> <span id="agent-celular"></span></p>
+                    <p><strong>Inspetoria:</strong> <span id="agent-inspetoria"></span></p>
+                    <p><strong>Endereço:</strong> <span id="agent-endereco"></span></p>
+                    <p><strong>CEP:</strong> <span id="agent-cep"></span></p>
+                </div>
+            </div>
+            <div class="form-section">
+                <div class="section-title">Requisição Administrativa</div>
+                <div class="form-group">
+                    <label for="ra-number">Requisição número:</label>
+                    <div class="ra-number-container">
+                        <input type="text" id="ra-number" placeholder="Gerado ao clicar em 'Gerar PDF' ou 'Enviar'" readonly>
+                        <button type="button" id="reset-ra-number" style="background-color: #95a5a6;">Reset (zerar contador)</button>
+                    </div>
+                    <div class="ra-suffix-hint">Formato: [Código RA]-[Ano][Matrícula 4 dígitos]-[Número sequencial] (gerado pelo sistema)</div>
+                </div>
+            </div>
+            <div class="form-section">
+                <div class="section-title">Data e Local</div>
+                <div class="inline-fields">
+                    <div class="form-group">
+                        <label for="municipio" class="required-field">Município:</label>
+                        <select id="municipio" required><option value="">Selecione um município...</option></select>
+                    </div>
+                    <div class="form-group">
+                        <label for="dia">Dia:</label>
+                        <input type="text" id="dia" placeholder="(dia - opcional)">
+                    </div>
+                    <div class="form-group">
+                        <label for="mes">Mês:</label>
+                        <input type="text" id="mes" placeholder="(mês por extenso - opcional)">
+                    </div>
+                    <div class="form-group">
+                        <label for="ano-data">Ano:</label>
+                        <input type="text" id="ano-data" placeholder="(ano)" disabled>
+                    </div>
+                </div>
+            </div>
+            <!-- CONTAINER PARA CAMPOS DINÂMICOS -->
+            <div id="dynamic-fields-container" class="dynamic-fields-container" style="display: none;">
+                <div class="section-title" style="border-bottom-color: #e74c3c;">Informações Complementares</div>
+                <div id="field-ao-group" class="form-group" style="display: none;">
+                    <label for="ao" class="dynamic-field-label">AO:</label>
+                    <input type="text" id="ao" placeholder="Destinatário">
+                </div>
+                <div id="field-cnpj-group" class="form-group" style="display: none;">
+                    <label for="cnpj" class="dynamic-field-label">CNPJ:</label>
+                    <input type="text" id="cnpj" placeholder="CNPJ do estabelecimento">
+                </div>
+                <div id="field-endereco2-group" class="form-group" style="display: none;">
+                    <label for="endereco2" class="dynamic-field-label">ENDEREÇO:</label>
+                    <input type="text" id="endereco2" placeholder="Endereço do destinatário">
+                </div>
+                <div id="field-protocolo-group" class="form-group" style="display: none;">
+                    <label for="protocolo" class="dynamic-field-label">PROTOCOLO:</label>
+                    <input type="text" id="protocolo" placeholder="Número do protocolo" inputmode="numeric" pattern="\d*">
+                </div>
+                <div id="field-at-group" class="form-group" style="display: none;">
+                    <label for="at" class="dynamic-field-label">At.:</label>
+                    <input type="text" id="at" placeholder="Atenção a / Referência">
+                </div>
+                <div id="field-ac-group" class="form-group" style="display: none;">
+                    <label for="ac" class="dynamic-field-label">A/C:</label>
+                    <input type="text" id="ac" placeholder="A/C (Ao cuidado de)">
+                </div>
+                <div id="field-corpo-requisicao-group" class="form-group" style="display: none;">
+                    <label for="corpo-requisicao" class="dynamic-field-label">CORPO DA REQUISIÇÃO:</label>
+                    <textarea id="corpo-requisicao" rows="6" placeholder="Digite o texto da requisição (use Enter para quebras de linha)"></textarea>
+                    <div class="hint-text" style="font-size: 12px; color: #7f8c8d;">O texto será exibido em negrito, com quebra automática de palavras. Linhas vazias (no final ou por Enter) aparecerão sublinhadas. Não há sublinhado complementar nas linhas com texto.</div>
+                    <div id="preview-corpo-container" class="preview-container" style="display: none;">
+                        <div class="preview-title">Prévia de como ficará no PDF (até 4 linhas):</div>
+                        <div id="preview-lines" class="preview-lines"></div>
+                        <div class="preview-note">↑ Apenas linhas totalmente vazias (após o texto ou por Enter) recebem sublinhado. Texto sem sublinhado complementar.</div>
+                    </div>
+                </div>
+            </div>
+            <div class="form-section">
+                <div class="section-title">Corpo da Requisição</div>
+                <div class="form-group">
+                    <label for="email">E-mail do Fiscal:</label>
+                    <input type="email" id="email" placeholder="(e-mail)" required>
+                </div>
+            </div>
+            <div class="form-section">
+                <div class="section-title">Rodapé</div>
+                <div class="form-group">
+                    <label for="inspetoria">Inspetoria:</label>
+                    <input type="text" id="inspetoria" placeholder="(EX: Angra dos Reis)" required>
+                </div>
+                <div class="form-group">
+                    <label for="endereco">Endereço da Inspetoria:</label>
+                    <input type="text" id="endereco" placeholder="(endereço)" required>
+                </div>
+                <div class="form-group">
+                    <label for="cep">CEP:</label>
+                    <input type="text" id="cep" placeholder="(CEP)" required>
+                </div>
+                <div class="form-group">
+                    <label for="email-rodape">E-mail da Inspetoria:</label>
+                    <input type="email" id="email-rodape" placeholder="(e-mail)" disabled>
+                </div>
+            </div>
+
+            <!-- SEÇÃO DE ENVIO DE E-MAIL -->
+            <div class="email-send-section">
+                <div class="section-title" style="border-bottom-color: #2ecc71; margin-top: 0;">Enviar Requisição por E-mail</div>
+                <div class="form-group">
+                    <label for="email-destino">E-mail de Destino:</label>
+                    <input type="email" id="email-destino" placeholder="destinatario@exemplo.com" required>
+                </div>
+                <div class="button-group">
+                    <button id="gerar-pdf" class="btn-primary">Gerar PDF com Carimbo</button>
+                    <button id="enviar-email" class="btn-secondary">📧 ENVIAR E-MAIL (Gmail)</button>
+                </div>
+                <p class="hint-text" style="margin-top: 10px;">O assunto e o corpo da mensagem são fixos e o PDF será anexado manualmente.</p>
+            </div>
+
+            <div id="loading" class="loading">Gerando PDF, por favor aguarde...</div>
+            <div id="error-message" class="error-message"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    // ============================================================
+    // 1. LISTA DE USUÁRIOS AUTORIZADOS (original)
+    // ============================================================
+    const usuariosAutorizados = [
+        { nome: "Adauto Lima Ruback Junior", matricula: "976", senha: "te1zn" },
+        { nome: "Adilson Rodrigues dos Santos", matricula: "992", senha: "kco2z" },
+        { nome: "Albino Fernades Damaso", matricula: "995", senha: "zrvuw" },
+        { nome: "Alessandra dos Santos Campesatto", matricula: "939", senha: "mlc8r" },
+        { nome: "Alex Jose Ferreira  Santos", matricula: "469", senha: "as5fm" },
+        { nome: "Ana Cristina Teixeira de Lyra Vecchi", matricula: "998", senha: "11d6r" },
+        { nome: "Ana Paula Camilo Cardoso", matricula: "1474", senha: "5akja" },
+        { nome: "Andrea Rabello Jeronymo", matricula: "765", senha: "nhqz6" },
+        { nome: "Barbara Audara Brito Gomes", matricula: "890", senha: "vx6z9" },
+        { nome: "Carlos Franklin Dias Moreira", matricula: "496", senha: "he62x" },
+        { nome: "Carlos Henrique Durce da Cruz", matricula: "1091", senha: "c2moi" },
+        { nome: "Celina Matheus de Jesus Carvalho", matricula: "1010", senha: "iv1wm" },
+        { nome: "Celso Cesar dos Santos Silva", matricula: "956", senha: "cmsgx" },
+        { nome: "Cesar Moreira da Anunciação", matricula: "950", senha: "4i10t" },
+        { nome: "Christiam Lucio Silva de Carvalho", matricula: "996", senha: "huyg8" },
+        { nome: "Cintia Eloy Moreira", matricula: "645", senha: "x84zm" },
+        { nome: "Cleverson Carvalho de Souza", matricula: "357", senha: "w12el" },
+        { nome: "Dulcenea Chaves Ribeiro", matricula: "986", senha: "as3pz" },
+        { nome: "Edson dos Santos Teixeira", matricula: "1093", senha: "d8jhm" },
+        { nome: "Evandro Luis Figueiredo", matricula: "994", senha: "3nhqj" },
+        { nome: "Fernando Mendes Neto", matricula: "773", senha: "t9oh7" },
+        { nome: "Gino Borges de Carvalho", matricula: "493", senha: "2fvy7" },
+        { nome: "Glauco Lopes Tostes", matricula: "991", senha: "v6sdk" },
+        { nome: "Jomir Nogueira dos Santos", matricula: "298", senha: "am73n" },
+        { nome: "João de Ataide Garcia Precioso", matricula: "575", senha: "h9quk" },
+        { nome: "Jorge Luis Andrade da Silva", matricula: "1004", senha: "534pa" },
+        { nome: "Jose Augusto Vargas Tavares Manhães", matricula: "770", senha: "ca3ih" },
+        { nome: "Jose Carlos Araujo Brito", matricula: "641", senha: "iy32c" },
+        { nome: "Jose Carlos Pingitore Papa", matricula: "323", senha: "kje1c" },
+        { nome: "Kennedy Bezerra de Araujo", matricula: "693", senha: "ghj55" },
+        { nome: "Leonardo Canario Carlos", matricula: "989", senha: "z86qg" },
+        { nome: "Leonardo de Oliveira Friedl", matricula: "573", senha: "vgd1g" },
+        { nome: "Leonardo Henrique Bride Alves", matricula: "1075", senha: "fgxeh" },
+        { nome: "Leonardo Medeiros Piccoli Ruiz", matricula: "1077", senha: "3n1xw" },
+        { nome: "Luciano Luiz Tardin Figueiredo", matricula: "1334", senha: "3yc6e" },
+        { nome: "Luciano Santos da Silva", matricula: "1009", senha: "fqv67" },
+        { nome: "Luis Carlos Jordão e Souza", matricula: "504", senha: "jpxjn" },
+        { nome: "Magno Vicente de Carvalho Manhães", matricula: "1475", senha: "6pkxg" },
+        { nome: "Marcio Andre Cedraz De Oliveira", matricula: "952", senha: "r1gk6" },
+        { nome: "Marcio Maximiano Silva de Oliveira", matricula: "999", senha: "e5h4r" },
+        { nome: "Marcio Ornelas da Cunha", matricula: "505", senha: "xza57" },
+        { nome: "Marcio Pereira", matricula: "909", senha: "a7cmp" },
+        { nome: "Marcio Soares Ferreira", matricula: "1478", senha: "ge191" },
+        { nome: "Marco Aurelio Machado Rodrigues", matricula: "340", senha: "zdph9" },
+        { nome: "Marcos Lima de Sá", matricula: "558", senha: "s62gj" },
+        { nome: "Marcos Yoshikazu Tsuge", matricula: "708", senha: "g5imr" },
+        { nome: "Marcus Vinicius de Freitas Soraggi", matricula: "766", senha: "sgwer" },
+        { nome: "Mariana dos Santos Bello", matricula: "1406", senha: "uqyh4" },
+        { nome: "Mario Roberto Souza Gomes", matricula: "574", senha: "bz2yu" },
+        { nome: "Neide Aparecida dos Santos", matricula: "506", senha: "lgmb5" },
+        { nome: "Ottassano de Souza Panetto", matricula: "1031", senha: "ff5kf" },
+        { nome: "Pablo Nazareth Pereira Alves", matricula: "951", senha: "dbrzt" },
+        { nome: "Pedro Paulo Guimaraes Ghenov", matricula: "771", senha: "7vrhc" },
+        { nome: "Roberval Ferreira de Araujo", matricula: "674", senha: "vbq74" },
+        { nome: "Rodrigo Del Guerso Soares", matricula: "2991", senha: "zyd4a" },
+        { nome: "Rosana Missão De Oliveira", matricula: "987", senha: "mlz6e" },
+        { nome: "Sergio Azevedo dos Santos", matricula: "990", senha: "n86ug" },
+        { nome: "Silvia Coutinho Barbosa Lobo", matricula: "1099", senha: "wscb4" },
+        { nome: "Cosme Luiz Chiniara Junior", matricula: "1418", senha: "9wmag" },
+        { nome: "Worlles Wagner de Oliveira Batista", matricula: "381", senha: "2ifnr" }
+    ];
+
+    // ============================================================
+    // 2. BASE COMPLETA DE AGENTES FISCAIS (original)
+    // ============================================================
+    const agentesFiscais = [
+        {"NOME":"Adauto Lima Ruback Junior","MATRICULA":976,"EMAIL":"adauto.lima@crea-rj.org.br","UNIDADE":"SNOR","CELULAR":"(21) 98868-7694","INSPETORIA":"Itaocara","ENDERECO":"Rua Cel. Pita de Castro, 230/loja 102 – Centro","CEP":"28570-000"},
+        {"NOME":"Adilson Rodrigues dos Santos","MATRICULA":992,"EMAIL":"adilson.rodrigues@crea-rj.org.br","UNIDADE":"SCAP","CELULAR":"(21) 98868-7695","INSPETORIA":"(SEDE)","ENDERECO":"Rua Buenos Aires, 40 – Térreo – Centro","CEP":"20070-022"},   
+        {"NOME":"Albino Fernandes Damaso","MATRICULA":995,"EMAIL":"albino.damaso@crea-rj.org.br","UNIDADE":"SCAP","CELULAR":"98868-7696","INSPETORIA":"(SEDE)","ENDERECO":"Rua Buenos Aires, 40 – Térreo – Centro","CEP":"20070-022"},
+        {"NOME":"Alessandra dos Santos Campesatto","MATRICULA":939,"EMAIL":"alessandra.campesatto@crea-rj.org.br","UNIDADE":"GFIS","CELULAR": "98868-7697","INSPETORIA":"(SEDE)","ENDERECO":"Rua Buenos Aires, 40 – Térreo – Centro","CEP":"20070-022"},    
+        {"NOME":"Alex Jose Ferreira Santos","MATRICULA":469,"EMAIL":"alexjose.santos@crea-rj.org.br","UNIDADE":"SSER","CELULAR":"(21) 98882-2107","INSPETORIA":"Campo Grande","ENDERECO":"Estrada do Cabuçu, 271/loja J – Campo Grande","CEP":"23052-230"},
+        {"NOME":"Ana Cristina Teixeira de Lyra Vecchi","MATRICULA":998,"EMAIL":"anacristina.vecchi@crea-rj.org.br","UNIDADE":"SCAP","CELULAR":"(21) 98868-7700","INSPETORIA":"(SEDE)","ENDERECO":"Rua Buenos Aires, 40 – Térreo – Centro","CEP":"20070-022"},
+        {"NOME":"Ana Paula Camilo Cardoso","MATRICULA":1474,"EMAIL":"ana.cardoso@crea-rj.org.br","UNIDADE":"SLES","CELULAR":"(21) 98882-2130","INSPETORIA":"Macaé","ENDERECO":"Rua Dr. Zamenhoff, 61 – Imbetiba – Macaé","CEP":"27913-290"},
+        {"NOME":"Andrea Rabello Jeronymo","MATRICULA":765,"EMAIL":"andrea.rabello@crea-rj.org.br","UNIDADE":"SCAP","CELULAR":"(21) 98882-2109","INSPETORIA":"Barra da Tijuca","ENDERECO":"Av. das Américas, 3939/loja B – Bloco 2 – B da Tijuca","CEP":"22631-003"},
+        {"NOME":"Barbara Audara Brito Gomes","MATRICULA":890,"EMAIL":"barbara.gomes@crea-rj.org.br","UNIDADE":"SLES","CELULAR":"(21) 98868-7704","INSPETORIA":"Araruama","ENDERECO":"Av. Nilo Peçanha, 259/sala 302 – Centro – Araruama","CEP":"28979-285"},
+        {"NOME":"Carlos Franklin Dias Moreira","MATRICULA":496,"EMAIL":"carlos.franklin@crea-rj.org.br","UNIDADE":"SBXD","CELULAR":"(21) 98882-2099","INSPETORIA":"Campo Grande","ENDERECO":"Estrada do Cabuçu, 271/loja J – Campo Grande","CEP":"23052-230"},
+        {"NOME":"Carlos Henrique Durce da Cruz","MATRICULA":1091,"EMAIL":"carlos.cruz@crea-rj.org.br","UNIDADE":"SSER","CELULAR":"(21) 98868-7698","INSPETORIA":"Petrópolis","ENDERECO":"Rua Monsenhor Bacelar, 128 – Centro – Petrópolis","CEP":"25685-113"},
+        {"NOME":"Celina Matheus de Jesus Carvalho","MATRICULA":1010,"EMAIL":"celina.carvalho@crea-rj.org.br","UNIDADE":"SCAP","CELULAR":"(21) 98491-7855","INSPETORIA":"(SEDE)","ENDERECO":"Rua Buenos Aires, 40 – Térreo – Centro","CEP":"20070-022"},
+        {"NOME":"Celso Cesar dos Santos Silva","MATRICULA":956,"EMAIL":"celso.silva@crea-rj.org.br","UNIDADE":"SMEL","CELULAR":"(21) 98880-2719","INSPETORIA":"São Gonçalo","ENDERECO":"Rua Dr. Feliciano Sodré, 78/sala 805 – Centro – S Gonçalo","CEP":"24440-440"},
+        {"NOME":"Cesar Moreira da Anunciação","MATRICULA":950,"EMAIL":"cesar.anunciacao@crea-rj.org.br","UNIDADE":"SMEL","CELULAR":"(21) 98880-2720","INSPETORIA":"Niterói","ENDERECO":"Av. Roberto Silveira, 245 – Icaraí – Niterói","CEP":"24230-151"},
+        {"NOME":"Christiam Lucio Silva de Carvalho","MATRICULA":996,"EMAIL":"christiam.carvalho@crea-rj.org.br","UNIDADE":"SLES","CELULAR":"(21) 98880-2723","INSPETORIA":"Búzios","ENDERECO":"Av. José Bento Ribeiro Dantas , 5400/sala 6 – A de Búzios","CEP":"28953-814"},
+        {"NOME":"Cintia Eloy Moreira","MATRICULA":645,"EMAIL":"cintia.eloy@crea-rj.org.br","UNIDADE":"SSUL","CELULAR":"(21) 98880-4702","INSPETORIA":"Resende","ENDERECO":"Av. Cel Prof Antonio Esteves, 01/sala 127 – Resende","CEP":"27523-000"},
+        {"NOME":"Cleverson Carvalho de Souza","MATRICULA":357,"EMAIL":"cleverson.souza@crea-rj.org.br","UNIDADE":"SCAP","CELULAR":"(21) 98882-2183","INSPETORIA":"Barra da Tijuca","ENDERECO":"Av. das Américas, 3939/loja B – Bloco 2 – B da Tijuca","CEP":"22631-003"},
+        {"NOME":"Cosme Luiz Chiniara Junior","MATRICULA":1418,"EMAIL":"cosme.chiniara@crea-rj.org.br","UNIDADE":"SEDE","CELULAR":"(21) 98104-0952","INSPETORIA":"(SEDE)","ENDERECO":"Rua Buenos Aires, 40 – Térreo – Centro","CEP":"20070-022"},
+        {"NOME":"Dulcenea Chaves Ribeiro","MATRICULA":986,"EMAIL":"dulcenea.ribeiro@crea-rj.org.br","UNIDADE":"xxxx","CELULAR":"(21) 98880-4704","INSPETORIA":"Angra Reis","ENDERECO":"Edifício Paço dos Profissionais, sala 101 – Centro – A Reis","CEP":"23900-102"},
+        {"NOME":"Edson dos Santos Teixeira","MATRICULA":1093,"EMAIL":"edson.teixeira@crea-rj.org.br","UNIDADE":"SLES","CELULAR":"(21) 98882-2169","INSPETORIA":"Cabo Frio","ENDERECO":"Av. Nilo Peçanha, 73/loja 5 – Centro – Cabo Frio","CEP":"28907-000"},
+        {"NOME":"Evandro Luis Figueiredo","MATRICULA":994,"EMAIL":"evandro.figueiredo@crea-rj.org.br","UNIDADE":"xxxx","CELULAR":"(21) 96722-3378","INSPETORIA":"(SEDE)","ENDERECO":"Rua Buenos Aires, 40 – Térreo – Centro","CEP":"20070-022"},
+        {"NOME":"Fernando Mendes Neto","MATRICULA":773,"EMAIL":"fernando.mendes@crea-rj.org.br","UNIDADE":"SCAP","CELULAR":"(21) 98882-2182","INSPETORIA":"(SEDE)","ENDERECO":"Rua Buenos Aires, 40 – Térreo – Centro","CEP":"20070-022"},
+        {"NOME":"Gino Borges de Carvalho","MATRICULA":493,"EMAIL":"gino.borges@crea-rj.org.br","UNIDADE":"CFEX","CELULAR":"(21) 98882-2181","INSPETORIA":"(SEDE)","ENDERECO":"Rua Buenos Aires, 40 – Térreo – Centro","CEP":"20070-022"},
+        {"NOME":"Glauco Lopes Tostes","MATRICULA":991,"EMAIL":"glauco.tostes@crea-rj.org.br","UNIDADE":"SSUL","CELULAR":"(21) 98491-7856","INSPETORIA":"Volta Redonda","ENDERECO":"Rua 21, 48(casa) – Vila Santa Cecília – Volta Redonda","CEP":"27260-280"},
+        {"NOME":"Jomir Nogueira dos Santos","MATRICULA":298,"EMAIL":"jomir.santos@crea-rj.org.br","UNIDADE":"SMEL","CELULAR":"(21) 98882-2157","INSPETORIA":"Maricá","ENDERECO":"Av. Roberto Silveira, 142/sala 404 – Centro – Maricá","CEP":"24900-445"},
+        {"NOME":"João de Ataide Garcia Precioso","MATRICULA":575,"EMAIL":"joao.ataide@crea-rj.org.br","UNIDADE":"SSUL","CELULAR":"(21) 98882-2144","INSPETORIA":"Volta Redonda","ENDERECO":"Rua 21, 48(casa) – Vila Santa Cecília – Volta Redonda","CEP":"27260-280"},
+        {"NOME":"Jorge Luis Andrade da Silva","MATRICULA":1004,"EMAIL":"jorge.silva@crea-rj.org.br","UNIDADE":"SMEL","CELULAR":"(21) 98882-2096","INSPETORIA":"Niterói","ENDERECO":"Av. Roberto Silveira, 245 – Icaraí – Niterói","CEP":"24230-151"},
+        {"NOME":"Jose Augusto Vargas Tavares Manhães","MATRICULA":770,"EMAIL":"jose.manhaes@crea-rj.org.br","UNIDADE":"SLES","CELULAR":"(21) 98882-2131","INSPETORIA":"Araruama","ENDERECO":"Av. Nilo Peçanha, 259/sala 302 – Centro – Araruama","CEP":"28979-285"},
+        {"NOME":"Jose Carlos Araujo Brito","MATRICULA":641,"EMAIL":"jose.brito@crea-rj.org.br","UNIDADE":"SSER","CELULAR":"(21) 98882-1996","INSPETORIA":"Três Rios","ENDERECO":"Rua Dr Walmir Peçanha, 20/sala 312 – Centro – T Rios","CEP":"25802-180"},
+        {"NOME":"Jose Carlos Pingitore Papa","MATRICULA":323,"EMAIL":"jose.papa@crea-rj.org.br","UNIDADE":"SCAP","CELULAR":"(21) 98882-2114","INSPETORIA":"(SEDE)","ENDERECO":"Rua Buenos Aires, 40 – Térreo – Centro","CEP":"20070-022"},
+        {"NOME":"Kennedy Bezerra de Araujo","MATRICULA":693,"EMAIL":"kennedy.araujo@crea-rj.org.br","UNIDADE":"SCAP","CELULAR":"(21) 98882-2110","INSPETORIA":"(SEDE)","ENDERECO":"Rua Buenos Aires, 40 – Térreo – Centro","CEP":"20070-022"},
+        {"NOME":"Leonardo Canario Carlos","MATRICULA":989,"EMAIL":"leonardo.canario@crea-rj.org.br","UNIDADE":"GFIS","CELULAR":"(21) 98882-4712","INSPETORIA":"Petrópolis","ENDERECO":"Rua Monsenhor Bacelar, 128 – Centro – Petrópolis","CEP":"25685-113"},
+        {"NOME":"Leonardo de Oliveira Friedl","MATRICULA":573,"EMAIL":"leonardo.friedl@crea-rj.org.br","UNIDADE":"SMEL","CELULAR":"(21) 98882-2171","INSPETORIA":"Niterói","ENDERECO":"Av. Roberto Silveira, 245 – Icaraí – Niterói","CEP":"24230-151"},
+        {"NOME":"Leonardo Henrique Bride Alves","MATRICULA":1075,"EMAIL":"leonardo.alves@crea-rj.org.br","UNIDADE":"SCAP","CELULAR":"(21) 98882-2097","INSPETORIA":"(SEDE)","ENDERECO":"Rua Buenos Aires, 40 – Térreo – Centro","CEP":"20070-022"},
+        {"NOME":"Leonardo Medeiros Piccoli Ruiz","MATRICULA":1077,"EMAIL":"leonardo.piccoli@crea-rj.org.br","UNIDADE":"SLES","CELULAR":"(21) 98882-4478","INSPETORIA":"Cabo Frio","ENDERECO":"Av. Nilo Peçanha, 73/loja 5 – Centro – Cabo Frio","CEP":"28907-000"},
+        {"NOME":"Luciano Luiz Tardin Figueiredo","MATRICULA":1334,"EMAIL":"luciano.figueiredo@crea-rj.org.br","UNIDADE":"SMEL","CELULAR":"(21) 98880-4708","INSPETORIA":"Niterói","ENDERECO":"Av. Roberto Silveira, 245 – Icaraí – Niterói","CEP":"24230-151"},
+        {"NOME":"Luciano Santos da Silva","MATRICULA":1009,"EMAIL":"luciano.santos@crea-rj.org.br","UNIDADE":"SBXD","CELULAR":"(21) 98880-4713","INSPETORIA":"Duque de Caxias","ENDERECO":"Rua Mal. Deodoro, 557/sala 406 – Duque de Caxias","CEP":"25071-190"},
+        {"NOME":"Luis Carlos Jordão e Souza","MATRICULA":504,"EMAIL":"luis.jordao@crea-rj.org.br","UNIDADE":"SMEL","CELULAR":"(21) 98882-2003","INSPETORIA":"Niterói","ENDERECO":"Av. Roberto Silveira, 245 – Icaraí – Niterói","CEP":"24230-151"},
+        {"NOME":"Magno Vicente de Carvalho Manhães","MATRICULA":1475,"EMAIL":"magno.manhaes@crea-rj.org.br","UNIDADE":"SNOR","CELULAR":"(21)98104-0318","INSPETORIA":"Campos dos Goytacazes","ENDERECO":"Rua Salvador Correa, 68 – Centro – Campos","CEP":"28035-310"},
+        {"NOME":"Marcio Andre Cedraz De Oliveira","MATRICULA":952,"EMAIL":"marcio.oliveira@crea-rj.org.br","UNIDADE":"SLES","CELULAR":"(21) 98882-4470","INSPETORIA":"Cabo Frio","ENDERECO":"Av. Nilo Peçanha, 73/loja 5 – Centro – Cabo Frio","CEP":"28907-000"},
+        {"NOME":"Marcio Maximiano Silva de Oliveira","MATRICULA":999,"EMAIL":"marcio.maximiano@crea-rj.org.br","UNIDADE":"SLES","CELULAR":"(21) 98882-4471","INSPETORIA":"Macaé","ENDERECO":"Rua Dr. Zamenhoff, 61 – Imbetiba – Macaé","CEP":"27913-290"},
+        {"NOME":"Marcio Ornelas da Cunha","MATRICULA":505,"EMAIL":"marcio.ornelas@crea-rj.org.br","UNIDADE":"SMEL","CELULAR":"(21) 98882-2159","INSPETORIA":"Niterói","ENDERECO":"Av. Roberto Silveira, 245 – Icaraí – Niterói","CEP":"24230-151"},
+        {"NOME":"Marcio Pereira","MATRICULA":909,"EMAIL":"marcio.pereira@crea-rj.org.br","UNIDADE":"SLES","CELULAR":"(21) 98881-3985","INSPETORIA":"Rio das Ostras","ENDERECO":"Rua do Flamengo, 668 – Liberdade – Rio das Ostras","CEP":"28893-404"},
+        {"NOME":"Marcio Soares Ferreira","MATRICULA":1478,"EMAIL":"marcio.soares@crea-rj.org.br","UNIDADE":"SSUL","CELULAR":"(21) 98104-1287","INSPETORIA":"Angra Reis","ENDERECO":"Edifício Paço dos Profissionais, sala 101 – Centro – A Reis","CEP":"23900-102"},
+        {"NOME":"Marco Aurelio Machado Rodrigues","MATRICULA":340,"EMAIL":"marco.aurelio@crea-rj.org.br","UNIDADE":"SMEL","CELULAR":"(21) 98882-2113","INSPETORIA":"Maricá","ENDERECO":"Av. Roberto Silveira, 142/sala 404 – Centro – Maricá","CEP":"24900-445"},
+        {"NOME":"Marcos Lima de Sá","MATRICULA":558,"EMAIL":"marcos.sa@crea-rj.org.br","UNIDADE":"SNOR","CELULAR":"(21) 98882-2158","INSPETORIA":"Campos dos Goytacazes","ENDERECO":"Rua Salvador Correa, 68 – Centro – Campos","CEP":"28035-310"},
+        {"NOME":"Marcos Yoshikazu Tsuge","MATRICULA":708,"EMAIL":"marcos.tsuge@crea-rj.org.br","UNIDADE":"SMEL","CELULAR":"(21) 98882-2174","INSPETORIA":"Niteroi","ENDERECO":"Av. Roberto Silveira, 245 – Icaraí – Niterói","CEP":"24230-151"},
+        {"NOME":"Marcus Vinicius de Freitas Soraggi","MATRICULA":766,"EMAIL":"marcus.soraggi@crea-rj.org.br","UNIDADE":"SNOR","CELULAR":"(21) 98882-2335","INSPETORIA":"Itaperuna","ENDERECO":"Av Dep José Cerqueira Garcia,103 – Itaperuna","CEP":"28300-000"},
+        {"NOME":"Mariana dos Santos Bello","MATRICULA":1406,"EMAIL":"mariana.bello@crea-rj.org.br","UNIDADE":"SSER","CELULAR":"(21) 98881-3985","INSPETORIA":"Petrópolis","ENDERECO":"Rua Monsenhor Bacelar, 128 – Centro – Petrópolis","CEP":"25685-113"},
+        {"NOME":"Mario Roberto Souza Gomes","MATRICULA":574,"EMAIL":"marioroberto.gomes@crea-rj.org.br","UNIDADE":"xxxx","CELULAR":"(21) 98882-2106","INSPETORIA":"(SEDE)","ENDERECO":"Rua Buenos Aires, 40 – Térreo – Centro","CEP":"20070-022"},
+        {"NOME":"Neide Aparecida dos Santos","MATRICULA":506,"EMAIL":"neide.santos@crea-rj.org.br","UNIDADE":"SSUL","CELULAR":"(21) 98882-1998","INSPETORIA":"Volta Redonda","ENDERECO":"Rua 21, 48(casa) – Vila Santa Cecília – Volta Redonda","CEP":"27260-280"},
+        {"NOME":"Ottassano de Souza Panetto","MATRICULA":1031,"EMAIL":"ottassano.panetto@crea-rj.org.br","UNIDADE":"xxxx","CELULAR":"(21) 98868-7703","INSPETORIA":"Rio das Ostras","ENDERECO":"Rua do Flamengo, 668 – Liberdade – Rio das Ostras","CEP":"28893-404"},
+        {"NOME":"Pablo Nazareth Pereira Alves","MATRICULA":951,"EMAIL":"pablo.alves@crea-rj.org.br","UNIDADE":"SBXD","CELULAR":"(21) 98882-4475","INSPETORIA":"Campo Grande","ENDERECO":"Estrada do Cabuçu, 271/loja J – Campo Grande","CEP":"23052-230"},
+        {"NOME":"Pedro Paulo Guimaraes Ghenov","MATRICULA":771,"EMAIL":"pedro.ghenov@crea-rj.org.br","UNIDADE":"SCAP","CELULAR":"(21) 98882-2098","INSPETORIA":"Barra da Tijuca","ENDERECO":"Av. das Américas, 3939/loja B – Bloco 2 – B da Tijuca","CEP":"22631-003"},
+        {"NOME":"Roberval Ferreira de Araujo","MATRICULA":674,"EMAIL":"roberval.araujo@crea-rj.org.br","UNIDADE":"SBXD","CELULAR":"(21) 98882-2129","INSPETORIA":"Nova Iguaçu","ENDERECO":"Rua Dom Walmor, 383/sala 406 – Centro – N Iguaçu","CEP":"26215-219"},
+        {"NOME":"Rodrigo Del Guerso Soares","MATRICULA":1345,"EMAIL":"rodrigo.soares@crea-rj.org.br","UNIDADE":"SCAP","CELULAR":"(21) 98491-7858","INSPETORIA":"(SEDE)","ENDERECO":"Rua Buenos Aires, 40 – Térreo – Centro","CEP":"20070-022"},
+        {"NOME":"Rosana Missão De Oliveira","MATRICULA":987,"EMAIL":"rosana.missao@crea-rj.org.br","UNIDADE":"SSUL","CELULAR":"(21) 98882-4476","INSPETORIA":"Barra do Piraí","ENDERECO":"Rua Paulo de Frontin, 139/sala 301 – Centro – B do Pirai","CEP":"27123-120"},
+        {"NOME":"Sergio Azevedo dos Santos","MATRICULA":990,"EMAIL":"sergio.azevedo@crea-rj.org.br","UNIDADE":"SSER","CELULAR":"(21) 98882-4486","INSPETORIA":"Teresópolis","ENDERECO":"Av. Lucio Meira, 330/sala 201 – Centro – Teresópolis","CEP":"25953-001"},
+        {"NOME":"Silvia Coutinho Barbosa Lobo","MATRICULA":1099,"EMAIL":"silvia.barbosa@crea-rj.org.br","UNIDADE":"SLES","CELULAR":"(21) 98868-7706","INSPETORIA":"Araruama","ENDERECO":"Av. Nilo Peçanha, 259/sala 302 – Centro – Araruama","CEP":"28979-285"},
+        {"NOME":"Worlles Wagner de Oliveira Batista","MATRICULA":381,"EMAIL":"worlles.batista@crea-rj.org.br","UNIDADE":"SMEL","CELULAR":"(21) 98882-2138","INSPETORIA":"Niterói","ENDERECO":"Av. Roberto Silveira, 245 – Icaraí – Niterói","CEP":"24230-151"}            
+    ];
+
+    // ============================================================
+    // 3. MUNICÍPIOS DO RJ (original)
+    // ============================================================
+    const municipios = [
+        "Angra dos Reis", "Aperibé", "Araruama", "Areal", "Armação dos Búzios",
+        "Arraial do Cabo", "Barra do Piraí", "Barra Mansa", "Belford Roxo",
+        "Bom Jardim", "Bom Jesus do Itabapoana", "Cabo Frio", "Cachoeiras de Macacu",
+        "Cambuci", "Campos dos Goytacazes", "Cantagalo", "Carapebus", "Cardoso Moreira",
+        "Carmo", "Casimiro de Abreu", "Comendador Levy Gasparian", "Conceição de Macabu",
+        "Cordeiro", "Duas Barras", "Duque de Caxias", "Engenheiro Paulo de Frontin",
+        "Guapimirim", "Iguaba Grande", "Itaboraí", "Itaguaí", "Italva", "Itaocara",
+        "Itaperuna", "Itatiaia", "Japeri", "Laje do Muriaé", "Macaé", "Macuco",
+        "Magé", "Mangaratiba", "Maricá", "Mendes", "Mesquita", "Miguel Pereira",
+        "Miracema", "Natividade", "Nilópolis", "Niterói", "Nova Friburgo",
+        "Nova Iguaçu", "Paracambi", "Paraíba do Sul", "Paraty", "Paty do Alferes",
+        "Petrópolis", "Pinheiral", "Piraí", "Porciúncula", "Porto Real",
+        "Quatis", "Queimados", "Quissamã", "Resende", "Rio Bonito", "Rio Claro",
+        "Rio das Flores", "Rio das Ostras", "Rio de Janeiro", "Santa Maria Madalena",
+        "Santo Antônio de Pádua", "São Fidélis", "São Francisco de Itabapoana",
+        "São Gonçalo", "São João da Barra", "São João de Meriti", "São José de Ubá",
+        "São José do Vale do Rio Preto", "São Pedro da Aldeia", "São Sebastião do Alto",
+        "Sapucaia", "Saquarema", "Seropédica", "Silva Jardim", "Sumidouro",
+        "Tanguá", "Teresópolis", "Trajano de Morais", "Três Rios", "Valença",
+        "Varre-Sai", "Vassouras", "Volta Redonda"
+    ];
+
+    // ============================================================
+    // 4. COORDENADAS DOS TEMPLATES (mantido original)
+    // ============================================================
+    const templateCoordinates = {
+        'RA01_MANUTENCAO_PREDIAL': { pageSize: { width: 595, height: 842 }, fields: { MUNICIPIO: { x: 433, y: 140, size: 10, align: 'right' }, DIA: { x: 440.28, y: 140, size: 10 }, MES: { x: 473, y: 140, size: 10 }, ANO2: { x: 535.05, y: 140, size: 10 }, RA: { x: 255, y: 125, size: 12, bold: true }, EMAIL: { x: 82, y: 678, size: 11, bold: true }, NOME: { y: 641.45, size: 11, bold: true, italic: true, center: true, width: 300 }, MATRICULA2: { x: 313.59, y: 665.75, size: 10, bold: true, italic: true }, CELULAR: { x: 270.00, y: 677.9, size: 10, bold: true }, EMAIL2: { x: 431.54, y: 794.71, size: 8, bold: true }, AO: { x: 75, y: 164, size: 11, bold: true, lineWidth: 483, lineYOffset: 0 }, CNPJ: { x: 85, y: 184, size: 11, bold: true, lineWidth: 473, lineYOffset: -1 }, ENDERECO2: { x: 106, y: 203, size: 11, bold: true, lineWidth: 454, lineYOffset: -2 } } },
+        '02_OBRA': { pageSize: { width: 595, height: 842 }, fields: { MUNICIPIO: { x: 432, y: 163, size: 10, align: 'right' }, DIA: { x: 440.28, y: 163.4, size: 10 }, MES: { x: 473, y: 163.4, size: 10 }, ANO2: { x: 535.05, y: 163.4, size: 10 }, RA: { x: 255, y: 137, size: 12, bold: true }, EMAIL: { x: 46, y: 675, size: 11, bold: true }, NOME: { y: 641.45, size: 11, bold: true, italic: true, center: true, width: 300 }, MATRICULA2: { x: 313.59, y: 665.75, size: 10, bold: true, italic: true }, CELULAR: { x: 270.00, y: 677.9, size: 10, bold: true }, EMAIL2: { x: 431.54, y: 794.71, size: 8, bold: true }, ENDERECO2: { x: 101, y: 210, size: 11, bold: true, lineWidth: 454, lineYOffset: -2 } } },
+        '02.1_OBRA': { pageSize: { width: 595, height: 842 }, fields: { MUNICIPIO: { x: 430, y: 152, size: 10, align: 'right' }, DIA: { x: 440.28, y: 152, size: 10 }, MES: { x: 473, y: 152, size: 10 }, ANO2: { x: 535.05, y: 152, size: 10 }, RA: { x: 253, y: 137, size: 12, bold: true }, EMAIL: { x: 48, y: 679, size: 11, bold: true }, NOME: { y: 716, size: 11, bold: true, italic: true, center: true, width: 300 }, MATRICULA2: { x: 312, y: 740.5, size: 10, bold: true, italic: true }, CELULAR: { x: 272, y: 752.5, size: 10, bold: true }, EMAIL2: { x: 431.54, y: 794.71, size: 8, bold: true }, ENDERECO2: { x: 101, y: 197, size: 11, bold: true, lineWidth: 454, lineYOffset: -2 } } },
+        '03_DILIGENCIA': { pageSize: { width: 595, height: 842 }, fields: { MUNICIPIO: { x: 430, y: 165, size: 10, align: 'right' }, DIA: { x: 440.28, y: 165, size: 10 }, MES: { x: 473, y: 165, size: 10 }, ANO2: { x: 535.05, y: 165, size: 10 }, RA: { x: 255, y: 137, size: 12, bold: true }, EMAIL: { x: 83, y: 683, size: 11, bold: true }, NOME: { y: 725, size: 11, bold: true, italic: true, center: true, width: 300 }, MATRICULA2: { x: 311, y: 751, size: 10, bold: true, italic: true }, CELULAR: { x: 272, y: 763, size: 10, bold: true }, EMAIL2: { x: 421, y: 794.71, size: 8, bold: true }, AO: { x: 75, y: 188, size: 11, bold: true, lineWidth: 483, lineYOffset: 0 }, ENDERECO2: { x: 115, y: 213, size: 11, bold: true, lineWidth: 445, lineYOffset: -2 }, PROTOCOLO: { x: 213, y: 249, size: 11, bold: true, lineWidth: 100, lineYOffset: -2 }, CORPO_REQUISICAO: { x: 50, y: 364, lineHeight: 14, maxWidth: 500, fontSize: 11, emptyLines: [ { y: 364, width: 500 }, { y: 378, width: 500 }, { y: 392, width: 500 }, { y: 406, width: 500 } ] } } },
+        '04_POSTO': { pageSize: { width: 595, height: 842 }, fields: { MUNICIPIO: { x: 430, y: 140, size: 10, align: 'right' }, DIA: { x: 440.28, y: 140, size: 10 }, MES: { x: 473, y: 140, size: 10 }, ANO2: { x: 535.05, y: 140, size: 10 }, RA: { x: 255, y: 125, size: 12, bold: true }, EMAIL: { x: 83, y: 706, size: 11, bold: true }, NOME: { y: 709, size: 11, bold: true, italic: true, center: true, width: 300 }, MATRICULA2: { x: 313, y: 734, size: 10, bold: true, italic: true }, CELULAR: { x: 273, y: 746, size: 10, bold: true }, EMAIL2: { x: 422, y: 810, size: 8, bold: true }, AO: { x: 75, y: 163, size: 11, bold: true, lineWidth: 483, lineYOffset: 0 }, CNPJ: { x: 85, y: 183, size: 11, bold: true, lineWidth: 473, lineYOffset: -1 }, ENDERECO2: { x: 115, y: 202, size: 11, bold: true, lineWidth: 443, lineYOffset: -2 } } },
+        '05_EMPRESA': { pageSize: { width: 595, height: 842 }, fields: { MUNICIPIO: { x: 432, y: 157, size: 10, align: 'right' }, DIA: { x: 441, y: 157, size: 10 }, MES: { x: 475, y: 157, size: 10 }, ANO2: { x: 536, y: 157, size: 10 }, RA: { x: 255, y: 129, size: 12, bold: true }, EMAIL: { x: 83, y: 706, size: 11, bold: true }, NOME: { y: 712, size: 11, bold: true, italic: true, center: true, width: 300 }, MATRICULA2: { x: 314, y: 737, size: 10, bold: true, italic: true }, CELULAR: { x: 270, y: 749, size: 10, bold: true }, EMAIL2: { x: 423, y: 800, size: 8, bold: true }, AO: { x: 75, y: 192, size: 11, bold: true, lineWidth: 483, lineYOffset: 0 } } },
+        '06_SHOPPING': { pageSize: { width: 595, height: 842 }, fields: { MUNICIPIO: { x: 432, y: 148, size: 10, align: 'right' }, DIA: { x: 443, y: 148, size: 10 }, MES: { x: 471, y: 148, size: 10 }, ANO2: { x: 536, y: 148, size: 10 }, RA: { x: 255, y: 120, size: 12, bold: true }, EMAIL: { x: 83, y: 689, size: 11, bold: true }, NOME: { y: 713.5, size: 11, bold: true, italic: true, center: true, width: 300 }, MATRICULA2: { x: 314, y: 739, size: 10, bold: true, italic: true }, CELULAR: { x: 272, y: 751, size: 10, bold: true }, EMAIL2: { x: 424, y: 792, size: 8, bold: true }, AO: { x: 75, y: 171, size: 11, bold: true, lineWidth: 483, lineYOffset: -2 }, ENDERECO2: { x: 115, y: 195, size: 11, bold: true, lineWidth: 443, lineYOffset: -2 } } },
+        '07_EVENTO': { pageSize: { width: 595, height: 842 }, fields: { MUNICIPIO: { x: 430, y: 141, size: 10, align: 'right' }, DIA: { x: 442, y: 140, size: 10 }, MES: { x: 471, y: 140, size: 10 }, ANO2: { x: 536, y: 140, size: 10 }, RA: { x: 255, y: 125, size: 12, bold: true }, EMAIL: { x: 83, y: 686, size: 11, bold: true }, NOME: { y: 728, size: 11, bold: true, italic: true, center: true, width: 300 }, MATRICULA2: { x: 312, y: 753, size: 10, bold: true, italic: true }, CELULAR: { x: 272, y: 764, size: 10, bold: true }, EMAIL2: { x: 426, y: 795, size: 8, bold: true }, AO: { x: 75, y: 163, size: 11, bold: true, lineWidth: 483, lineYOffset: -2 }, ENDERECO2: { x: 115, y: 183, size: 11, bold: true, lineWidth: 443, lineYOffset: -2 }, AT: { x: 78, y: 203, size: 11, bold: true, lineWidth: 481, lineYOffset: -2 } } },
+        '08_MERCADO': { pageSize: { width: 595, height: 842 }, fields: { MUNICIPIO: { x: 430, y: 165, size: 10, align: 'right' }, DIA: { x: 442, y: 165, size: 10 }, MES: { x: 471, y: 165, size: 10 }, ANO2: { x: 536, y: 165, size: 10 }, RA: { x: 255, y: 137, size: 12, bold: true }, EMAIL: { x: 80, y: 690, size: 11, bold: true }, NOME: { y: 713, size: 11, bold: true, italic: true, center: true, width: 300 }, MATRICULA2: { x: 316, y: 736.5, size: 10, bold: true, italic: true }, CELULAR: { x: 272, y: 749, size: 10, bold: true }, EMAIL2: { x: 426, y: 795, size: 8, bold: true }, AO: { x: 75, y: 187, size: 11, bold: true, lineWidth: 483, lineYOffset: -2 }, ENDERECO2: { x: 115, y: 207, size: 11, bold: true, lineWidth: 443, lineYOffset: -2 } } },
+        '09_HOSPITAL': { pageSize: { width: 595, height: 842 }, fields: { MUNICIPIO: { x: 431, y: 155, size: 10, align: 'right' }, DIA: { x: 440, y: 155, size: 10 }, MES: { x: 472, y: 155, size: 10 }, ANO2: { x: 536, y: 155, size: 10 }, RA: { x: 255, y: 128, size: 12, bold: true }, EMAIL: { x: 83, y: 682, size: 11, bold: true }, NOME: { y: 727, size: 11, bold: true, italic: true, center: true, width: 300 }, MATRICULA2: { x: 314, y: 751.5, size: 10, bold: true, italic: true }, CELULAR: { x: 272, y: 763, size: 10, bold: true }, EMAIL2: { x: 426, y: 803, size: 8, bold: true }, AO: { x: 75, y: 178, size: 11, bold: true, lineWidth: 483, lineYOffset: -2 } } },
+        '10_RECEITUARIO': { pageSize: { width: 595, height: 842 }, fields: { MUNICIPIO: { x: 430, y: 151, size: 10, align: 'right' }, DIA: { x: 442, y: 151, size: 10 }, MES: { x: 471, y: 151, size: 10 }, ANO2: { x: 536, y: 151, size: 10 }, RA: { x: 251, y: 122, size: 12, bold: true }, EMAIL: { x: 48, y: 690, size: 11, bold: true }, NOME: { y: 727, size: 11, bold: true, italic: true, center: true, width: 300 }, MATRICULA2: { x: 314, y: 751.5, size: 10, bold: true, italic: true }, CELULAR: { x: 272, y: 763, size: 10, bold: true }, EMAIL2: { x: 426, y: 795, size: 8, bold: true }, AO: { x: 75, y: 174, size: 11, bold: true, lineWidth: 483, lineYOffset: -2 }, ENDERECO2: { x: 115, y: 193, size: 11, bold: true, lineWidth: 443, lineYOffset: -2 } } },
+        '11_BAR_RESTAURANTE': { pageSize: { width: 595, height: 842 }, fields: { MUNICIPIO: { x: 430, y: 159, size: 10, align: 'right' }, DIA: { x: 441, y: 159, size: 10 }, MES: { x: 471, y: 159, size: 10 }, ANO2: { x: 536, y: 159, size: 10 }, RA: { x: 255, y: 131, size: 12, bold: true }, EMAIL: { x: 83, y: 686, size: 11, bold: true }, NOME: { y: 713.5, size: 11, bold: true, italic: true, center: true, width: 300 }, MATRICULA2: { x: 314, y: 739, size: 10, bold: true, italic: true }, CELULAR: { x: 272, y: 751, size: 10, bold: true }, EMAIL2: { x: 424, y: 792, size: 8, bold: true }, AO: { x: 75, y: 183, size: 11, bold: true, lineWidth: 483, lineYOffset: -2 }, ENDERECO2: { x: 115, y: 202, size: 11, bold: true, lineWidth: 443, lineYOffset: -2 } } },
+        '12_HOTEL': { pageSize: { width: 595, height: 842 }, fields: { MUNICIPIO: { x: 430, y: 152, size: 10, align: 'right' }, DIA: { x: 441, y: 152, size: 10 }, MES: { x: 471, y: 152, size: 10 }, ANO2: { x: 536, y: 152, size: 10 }, RA: { x: 255, y: 137, size: 12, bold: true }, EMAIL: { x: 83, y: 669, size: 11, bold: true }, NOME: { y: 713.5, size: 11, bold: true, italic: true, center: true, width: 300 }, MATRICULA2: { x: 314, y: 739, size: 10, bold: true, italic: true }, CELULAR: { x: 272, y: 751, size: 10, bold: true }, EMAIL2: { x: 424, y: 791, size: 8, bold: true }, AO: { x: 75, y: 175, size: 11, bold: true, lineWidth: 483, lineYOffset: -2 }, ENDERECO2: { x: 115, y: 194, size: 11, bold: true, lineWidth: 443, lineYOffset: -2 } } },
+        '13_AEROPORTO': { pageSize: { width: 595, height: 842 }, fields: { MUNICIPIO: { x: 430, y: 153, size: 10, align: 'right' }, DIA: { x: 441, y: 153, size: 10 }, MES: { x: 471, y: 153, size: 10 }, ANO2: { x: 536, y: 153, size: 10 }, RA: { x: 255, y: 125, size: 12, bold: true }, EMAIL: { x: 81, y: 670, size: 11, bold: true }, NOME: { y: 713, size: 11, bold: true, italic: true, center: true, width: 300 }, MATRICULA2: { x: 316, y: 736.5, size: 10, bold: true, italic: true }, CELULAR: { x: 272, y: 749, size: 10, bold: true }, EMAIL2: { x: 426, y: 812.5, size: 8, bold: true }, AO: { x: 75, y: 175, size: 11, bold: true, lineWidth: 483, lineYOffset: -2 }, ENDERECO2: { x: 115, y: 195, size: 11, bold: true, lineWidth: 443, lineYOffset: -2 } } },
+        '14_INSTITUICAO_ENSINO': { pageSize: { width: 595, height: 842 }, fields: { MUNICIPIO: { x: 430, y: 153, size: 10, align: 'right' }, DIA: { x: 441, y: 153, size: 10 }, MES: { x: 471, y: 153, size: 10 }, ANO2: { x: 536, y: 153, size: 10 }, RA: { x: 255, y: 125, size: 12, bold: true }, EMAIL: { x: 83, y: 682, size: 11, bold: true }, NOME: { y: 727, size: 11, bold: true, italic: true, center: true, width: 300 }, MATRICULA2: { x: 314, y: 751.5, size: 10, bold: true, italic: true }, CELULAR: { x: 272, y: 763, size: 10, bold: true }, EMAIL2: { x: 426, y: 808, size: 8, bold: true }, AO: { x: 75, y: 175, size: 11, bold: true, lineWidth: 483, lineYOffset: -2 }, ENDERECO2: { x: 115, y: 195, size: 11, bold: true, lineWidth: 443, lineYOffset: -2 } } },
+        '15_ATERRO': { pageSize: { width: 595, height: 842 }, fields: { MUNICIPIO: { x: 430, y: 153, size: 10, align: 'right' }, DIA: { x: 441, y: 153, size: 10 }, MES: { x: 471, y: 153, size: 10 }, ANO2: { x: 536, y: 153, size: 10 }, RA: { x: 255, y: 125, size: 12, bold: true }, EMAIL: { x: 83, y: 701, size: 11, bold: true }, NOME: { y: 700, size: 11, bold: true, italic: true, center: true, width: 300 }, MATRICULA2: { x: 313, y: 726.5, size: 10, bold: true, italic: true }, CELULAR: { x: 268, y: 739, size: 10, bold: true }, EMAIL2: { x: 429, y: 811, size: 8, bold: true }, AO: { x: 75, y: 175, size: 11, bold: true, lineWidth: 483, lineYOffset: -2 }, ENDERECO2: { x: 115, y: 195, size: 11, bold: true, lineWidth: 443, lineYOffset: -2 } } },
+        '16_AGRONOMIA': { pageSize: { width: 595, height: 842 }, fields: { MUNICIPIO: { x: 423, y: 160, size: 10, align: 'right' }, DIA: { x: 434, y: 160, size: 10 }, MES: { x: 465, y: 160, size: 10 }, ANO2: { x: 529, y: 160, size: 10 }, RA: { x: 263, y: 133, size: 12, bold: true }, NOME: { y: 713.5, size: 11, bold: true, italic: true, center: true, width: 300 }, MATRICULA2: { x: 314, y: 739, size: 10, bold: true, italic: true }, CELULAR: { x: 272, y: 751, size: 10, bold: true }, EMAIL2: { x: 424, y: 803, size: 8, bold: true }, AO: { x: 84, y: 183, size: 11, bold: true, lineWidth: 483, lineYOffset: -2 }, ENDERECO2: { x: 124, y: 203, size: 11, bold: true, lineWidth: 443, lineYOffset: -2 } } },
+        '17_ESTADIO': { pageSize: { width: 595, height: 842 }, fields: { MUNICIPIO: { x: 432, y: 159, size: 10, align: 'right' }, DIA: { x: 440, y: 159, size: 10 }, MES: { x: 471, y: 159, size: 10 }, ANO2: { x: 536, y: 159, size: 10 }, RA: { x: 255, y: 137, size: 12, bold: true }, EMAIL: { x: 80, y: 691, size: 11, bold: true }, NOME: { y: 713.5, size: 11, bold: true, italic: true, center: true, width: 300 }, MATRICULA2: { x: 314, y: 739, size: 10, bold: true, italic: true }, CELULAR: { x: 272, y: 751, size: 10, bold: true }, EMAIL2: { x: 424, y: 790, size: 8, bold: true }, AO: { x: 86, y: 171, size: 11, bold: true, lineWidth: 476, lineYOffset: -2 }, AC: { x: 86, y: 194, size: 11, bold: true, lineWidth: 476, lineYOffset: -2 } } }
+    };
+
+    const stampYPositions = {
+        'RA01_MANUTENCAO_PREDIAL': 740, '02_OBRA': 740, '02.1_OBRA': 740, '03_DILIGENCIA': 740,
+        '04_POSTO': 760, '05_EMPRESA': 756, '06_SHOPPING': 740, '07_EVENTO': 740,
+        '08_MERCADO': 740, '09_HOSPITAL': 742, '10_RECEITUARIO': 740, '11_BAR_RESTAURANTE': 740,
+        '12_HOTEL': 740, '13_AEROPORTO': 745, '14_INSTITUICAO_ENSINO': 752, '15_ATERRO': 760,
+        '16_AGRONOMIA': 700, '17_ESTADIO': 740
+    };
+    const footerYPositions = {
+        'RA01_MANUTENCAO_PREDIAL': 782, '02_OBRA': 782, '02.1_OBRA': 782, '03_DILIGENCIA': 782,
+        '04_POSTO': 797, '05_EMPRESA': 790, '06_SHOPPING': 782, '07_EVENTO': 782,
+        '08_MERCADO': 782, '09_HOSPITAL': 789, '10_RECEITUARIO': 782, '11_BAR_RESTAURANTE': 782,
+        '12_HOTEL': 782, '13_AEROPORTO': 795, '14_INSTITUICAO_ENSINO': 796, '15_ATERRO': 797,
+        '16_AGRONOMIA': 785, '17_ESTADIO': 782
+    };
+    const anexosFiles = {
+        'servicos_tecnicos': 'Serviços_Técnicos.odt',
+        'prestadores_servicos': 'Prestadores_de_Serviços.odt',
+        'laudos_vistorias': 'Laudos_de_Vistorias_Estádios.odt',
+        'quadro_tecnicos': 'Quadro_Técnicos.odt',
+    };
+
+    // ============================================================
+    // 5. VARIÁVEIS GLOBAIS E FUNÇÕES AUXILIARES
+    // ============================================================
+    let selectedTemplate = 'RA01_MANUTENCAO_PREDIAL';
+    let selectedTemplateName = 'RA01 Manutenção Predial';
+    let selectedTemplateFile = 'RA01_MANUTENCAO_PREDIAL.pdf';
+    let selectedPrefix = 'RA01';
+    let currentAgent = null;
+    let lastPdfBlob = null;
+    let lastPdfFilename = null;
+
+    function getCoordinatesForTemplate(templateKey) {
+        return templateCoordinates[templateKey] || { pageSize: { width: 595, height: 842 }, fields: {} };
+    }
+    function getStampY() { return stampYPositions[selectedTemplate] || 740; }
+    function getFooterY() { return footerYPositions[selectedTemplate] || 782; }
+    function buscarAgentePorMatricula(matricula) {
+        const matriculaNum = parseInt(matricula.toString().trim());
+        return agentesFiscais.find(a => a.MATRICULA === matriculaNum) || null;
+    }
+    function formatMatricula(matricula) {
+        if (!matricula) return '';
+        return matricula.toString().padStart(4, '0');
+    }
+
+    // ============================================================
+    // 6. FUNÇÕES DE INTEGRAÇÃO COM A API (contador persistente)
+    // ============================================================
+    async function buscarProximoRA() {
+        if (!currentAgent) {
+            document.getElementById('ra-number').value = '';
+            return;
+        }
+        const matricula = currentAgent.MATRICULA;
+        try {
+            const response = await fetch(`/api/next-ra/${selectedPrefix}/${matricula}`);
+            if (!response.ok) throw new Error('Erro ao obter próximo RA');
+            const data = await response.json();
+            document.getElementById('ra-number').value = data.ra;
+            // Atualiza o ano no campo de data (se não preenchido)
+            if (document.getElementById('ano-data').value === '') {
+                document.getElementById('ano-data').value = data.ano;
+            }
+        } catch (error) {
+            console.error('Falha ao buscar RA:', error);
+            document.getElementById('ra-number').value = 'Erro ao gerar número';
+        }
+    }
+
+    async function resetarContador() {
+        if (!currentAgent) {
+            alert('Nenhum agente logado.');
+            return;
+        }
+        const matricula = currentAgent.MATRICULA;
+        if (!confirm(`Tem certeza que deseja ZERAR o contador para ${selectedPrefix} (matrícula ${matricula})? Isso reiniciará a numeração.`)) return;
+        try {
+            const response = await fetch(`/api/reset-ra/${selectedPrefix}/${matricula}`, { method: 'POST' });
+            if (!response.ok) throw new Error('Erro ao resetar contador');
+            const data = await response.json();
+            alert('Contador resetado com sucesso!');
+            // Busca o próximo (que será 1) – agora apenas se o usuário clicar em gerar novamente
+            // Mas podemos limpar o campo para indicar que está zerado
+            document.getElementById('ra-number').value = '';
+        } catch (error) {
+            alert('Erro ao resetar contador: ' + error.message);
+        }
+    }
+
+    // ============================================================
+    // 7. FUNÇÕES DE PREENCHIMENTO DO PDF (sem alterações)
+    // ============================================================
+    async function fillPdf(pdfDoc, rgb, formData, stampImageBlob) {
+        try {
+            const pages = pdfDoc.getPages();
+            const firstPage = pages[0];
+            const helveticaFont = await pdfDoc.embedFont('Helvetica');
+            const helveticaBoldFont = await pdfDoc.embedFont('Helvetica-Bold');
+            const coordinates = getCoordinatesForTemplate(selectedTemplate);
+            const pageHeight = coordinates.pageSize.height;
+            const pageWidth = coordinates.pageSize.width;
+            const camposIgnorados = ['INSPETORIA', 'ENDERECO', 'CEP'];
+            
+            for (const [fieldName, value] of Object.entries(formData)) {
+                if (camposIgnorados.includes(fieldName)) continue;
+                if (fieldName === 'CORPO_REQUISICAO') continue;
+                const fieldCoord = coordinates.fields[fieldName];
+                if (fieldCoord && value && value.trim() !== '') {
+                    const { x, y, size, bold, center, align } = fieldCoord;
+                    const yPos = pageHeight - y - size;
+                    let font = bold ? helveticaBoldFont : helveticaFont;
+                    let xPos = x;
+                    if (align === 'right' && value) {
+                        const textWidth = font.widthOfTextAtSize(value, size);
+                        xPos = x - textWidth;
+                    } else if (center) {
+                        const textWidth = font.widthOfTextAtSize(value, size);
+                        xPos = (pageWidth - textWidth) / 2;
+                    }
+                    firstPage.drawText(value, { x: xPos, y: yPos, size, font, color: rgb(0,0,0) });
+                }
+            }
+            
+            const dynamicFields = ['AO', 'CNPJ', 'ENDERECO2', 'PROTOCOLO', 'AT', 'AC'];
+            for (const fieldName of dynamicFields) {
+                const coord = coordinates.fields[fieldName];
+                if (!coord) continue;
+                const value = formData[fieldName];
+                const { x, y, size = 10, bold = false, lineWidth = 150, lineYOffset = 2 } = coord;
+                const yPosText = pageHeight - y - size;
+                const font = bold ? helveticaBoldFont : helveticaFont;
+                if (value && value.trim() !== '') {
+                    firstPage.drawText(value, { x: x, y: yPosText, size, font, color: rgb(0,0,0) });
+                } else {
+                    const lineY = yPosText + lineYOffset;
+                    firstPage.drawLine({ start: { x: x, y: lineY }, end: { x: x + lineWidth, y: lineY }, thickness: 0.5, color: rgb(0,0,0) });
+                }
+            }
+
+            // RA03: corpo da requisição
+            if (selectedPrefix === 'RA03') {
+                const corpoCoord = coordinates.fields.CORPO_REQUISICAO;
+                if (corpoCoord) {
+                    const texto = formData.CORPO_REQUISICAO || '';
+                    const { x, y, lineHeight, maxWidth, fontSize, emptyLines } = corpoCoord;
+                    const yBase = pageHeight - y - fontSize;
+                    const lines = splitTextIntoLines(texto, maxWidth, fontSize, helveticaBoldFont);
+                    const maxLines = emptyLines.length;
+                    for (let i = 0; i < Math.min(lines.length, maxLines); i++) {
+                        const lineY = yBase - (i * lineHeight);
+                        if (lines[i] !== '') {
+                            drawTextOnlyLine(firstPage, lines[i], x, lineY, fontSize, helveticaBoldFont, rgb(0,0,0));
+                        } else {
+                            firstPage.drawLine({ start: { x: x, y: lineY - fontSize/2 }, end: { x: x + maxWidth, y: lineY - fontSize/2 }, thickness: 0.5, color: rgb(0,0,0) });
+                        }
+                    }
+                    if (lines.length < maxLines) {
+                        for (let i = lines.length; i < maxLines; i++) {
+                            const emptyLine = emptyLines[i];
+                            const lineY = pageHeight - emptyLine.y - fontSize;
+                            firstPage.drawLine({ start: { x: x, y: lineY }, end: { x: x + emptyLine.width, y: lineY }, thickness: 0.5, color: rgb(0,0,0) });
+                        }
+                    }
+                }
+            }
+            
+            await drawFooter(pdfDoc, firstPage, formData, rgb, helveticaBoldFont);
+            
+            if (stampImageBlob) {
+                const stampImageBytes = await stampImageBlob.arrayBuffer();
+                const stampImage = await pdfDoc.embedPng(stampImageBytes);
+                const stampWidth = 380, stampHeight = 40;
+                const stampY = getStampY();
+                const stampX = (pageWidth - stampWidth) / 2;
+                const yPosStamp = pageHeight - stampY - stampHeight;
+                firstPage.drawImage(stampImage, { x: stampX, y: yPosStamp, width: stampWidth, height: stampHeight });
+            }
+            return pdfDoc;
+        } catch (error) {
+            throw new Error(`Erro ao preencher PDF: ${error.message}`);
+        }
+    }
+
+    function splitTextIntoLines(text, maxWidth, fontSize, boldFont) {
+        if (!text || text.trim() === '') return [];
+        const paragraphs = text.split(/\r?\n/);
+        const allLines = [];
+        for (let para of paragraphs) {
+            if (para.trim() === '') {
+                allLines.push('');
+                continue;
+            }
+            const words = para.split(' ');
+            let currentLine = '';
+            for (let i = 0; i < words.length; i++) {
+                const word = words[i];
+                const testLine = currentLine ? currentLine + ' ' + word : word;
+                const width = boldFont.widthOfTextAtSize(testLine, fontSize);
+                if (width <= maxWidth) {
+                    currentLine = testLine;
+                } else {
+                    if (currentLine) allLines.push(currentLine);
+                    currentLine = word;
+                }
+            }
+            if (currentLine) allLines.push(currentLine);
+        }
+        return allLines;
+    }
+
+    function drawTextOnlyLine(page, text, x, y, fontSize, font, color) {
+        if (text && text.trim() !== '') {
+            page.drawText(text, { x: x, y: y, size: fontSize, font: font, color: color });
+        }
+    }
+
+    async function drawFooter(pdfDoc, firstPage, formData, rgb, helveticaBoldFont) {
+        try {
+            const coordinates = getCoordinatesForTemplate(selectedTemplate);
+            const pageHeight = coordinates.pageSize.height;
+            const footerY = getFooterY();
+            const fontSize = 7;
+            const lineSpacing = 10;
+            const footerOffsetX = 225;
+            const lines = [
+                `Inspetoria de ${formData.INSPETORIA}`,
+                formData.ENDERECO,
+                `CEP ${formData.CEP}`
+            ];
+            for (let i = 0; i < lines.length; i++) {
+                const yPos = pageHeight - (footerY + i * lineSpacing) - fontSize;
+                firstPage.drawText(lines[i], { x: footerOffsetX, y: yPos, size: fontSize, font: helveticaBoldFont, color: rgb(0,0,0) });
+            }
+        } catch (error) { console.error('Erro no rodapé:', error); }
+    }
+
+    async function loadPdfTemplate(templateFile) {
+        try {
+            const { PDFDocument, rgb } = PDFLib;
+            const response = await fetch(`template/${templateFile}`);
+            if (!response.ok) throw new Error(`Arquivo ${templateFile} não encontrado`);
+            const pdfBytes = await response.arrayBuffer();
+            const pdfDoc = await PDFDocument.load(pdfBytes);
+            return { pdfDoc, rgb };
+        } catch (error) {
+            throw new Error(`Erro ao carregar template: ${error.message}`);
+        }
+    }
+
+    function getFormData() {
+        return {
+            RA: document.getElementById('ra-number').value,
+            MUNICIPIO: document.getElementById('municipio').value,
+            DIA: document.getElementById('dia').value,
+            MES: document.getElementById('mes').value,
+            ANO2: document.getElementById('ano-data').value,
+            EMAIL: document.getElementById('email').value,
+            INSPETORIA: document.getElementById('inspetoria').value,
+            ENDERECO: document.getElementById('endereco').value,
+            CEP: document.getElementById('cep').value,
+            EMAIL2: document.getElementById('email-rodape').value,
+            AO: document.getElementById('ao').value,
+            CNPJ: document.getElementById('cnpj').value,
+            ENDERECO2: document.getElementById('endereco2').value,
+            PROTOCOLO: document.getElementById('protocolo').value,
+            AT: document.getElementById('at').value,
+            AC: document.getElementById('ac').value,
+            CORPO_REQUISICAO: document.getElementById('corpo-requisicao').value
+        };
+    }
+
+    function showLoading() { document.getElementById('loading').style.display = 'block'; document.getElementById('error-message').style.display = 'none'; }
+    function hideLoading() { document.getElementById('loading').style.display = 'none'; }
+    function showError(message) { document.getElementById('error-message').textContent = message; document.getElementById('error-message').style.display = 'block'; hideLoading(); }
+
+    async function generatePdf() {
+        try {
+            if (!currentAgent) { showError('Por favor, faça login novamente.'); return false; }
+
+            // *** GERA O NÚMERO DA REQUISIÇÃO AGORA, NO MOMENTO DA GERAÇÃO ***
+            await buscarProximoRA();
+
+            const formData = getFormData();
+            const requiredFields = ['RA', 'MUNICIPIO', 'EMAIL', 'INSPETORIA', 'ENDERECO', 'CEP'];
+            const missingFields = requiredFields.filter(field => !formData[field] || formData[field].trim() === '');
+            if (missingFields.length > 0) { showError(`Por favor, preencha todos os campos obrigatórios: ${missingFields.join(', ')}`); return false; }
+            showLoading();
+            const stampImageBlob = await createStampImage(currentAgent);
+            const template = await loadPdfTemplate(selectedTemplateFile);
+            if (!template) return false;
+            const { pdfDoc, rgb } = template;
+            const filledPdf = await fillPdf(pdfDoc, rgb, formData, stampImageBlob);
+            const fileName = `${selectedTemplateName} - ${formData.RA}.pdf`;
+            const pdfBytes = await filledPdf.save();
+            lastPdfBlob = new Blob([pdfBytes], { type: 'application/pdf' });
+            lastPdfFilename = fileName;
+            download(pdfBytes, fileName, "application/pdf");
+            hideLoading();
+            return true;
+        } catch (error) {
+            showError(`Erro ao gerar PDF: ${error.message}`);
+            return false;
+        }
+    }
+
+    async function createStampImage(agente) {
+        return new Promise((resolve) => {
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+            const width = 420, height = 45;
+            canvas.width = width; canvas.height = height;
+            ctx.clearRect(0, 0, width, height);
+            const centerX = width / 2;
+            let currentY = 10;
+            const lineSpacing = 10;
+            ctx.fillStyle = '#000000';
+            ctx.font = 'bold 12px "Arial"';
+            ctx.textAlign = 'center';
+            ctx.fillText(agente.NOME, centerX, currentY);
+            currentY += lineSpacing;
+            ctx.font = '10px "Arial"';
+            ctx.fillStyle = '#333333';
+            ctx.fillText('Agente de Fiscalização', centerX, currentY);
+            currentY += lineSpacing;
+            ctx.font = 'bold 10px "Arial"';
+            ctx.fillStyle = '#000000';
+            ctx.fillText(`Matrícula: ${agente.MATRICULA}`, centerX, currentY);
+            currentY += lineSpacing;
+            ctx.font = 'bold 10px "Arial"';
+            ctx.fillText(`Celular: ${agente.CELULAR}`, centerX, currentY);
+            canvas.toBlob((blob) => { resolve(blob); }, 'image/png');
+        });
+    }
+
+    function abrirGmailPreenchido(to, subject, body) {
+        const encodedTo = encodeURIComponent(to);
+        const encodedSubject = encodeURIComponent(subject);
+        const encodedBody = encodeURIComponent(body);
+        const isAndroid = /Android/i.test(navigator.userAgent);
+        const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+        let url;
+        if (isAndroid) {
+            url = `intent://mail.google.com/mail/?extsrc=mailto&url=mailto:${encodedTo}?subject=${encodedSubject}&body=${encodedBody}#Intent;package=com.google.android.gm;scheme=https;end`;
+            setTimeout(() => { if (document.hasFocus()) { window.location.href = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodedTo}&su=${encodedSubject}&body=${encodedBody}`; } }, 1000);
+            window.location.href = url;
+        } else if (isIOS) {
+            url = `googlegmail://co?to=${encodedTo}&subject=${encodedSubject}&body=${encodedBody}`;
+            window.location.href = url;
+            setTimeout(() => { if (document.hasFocus()) { window.location.href = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodedTo}&su=${encodedSubject}&body=${encodedBody}`; } }, 1000);
+        } else {
+            url = `https://mail.google.com/mail/?view=cm&fs=1&to=${encodedTo}&su=${encodedSubject}&body=${encodedBody}`;
+            window.location.href = url;
+        }
+    }
+
+    async function enviarEmail() {
+        const emailDestino = document.getElementById('email-destino').value.trim();
+        if (!emailDestino) { showError('Informe o e-mail de destino antes de enviar.'); return; }
+        if (!lastPdfBlob) {
+            showLoading();
+            const gerado = await generatePdf();
+            hideLoading();
+            if (!gerado) return;
+        }
+        const assunto = 'Requisição Administrativa - PDF Anexo';
+        let corpo = 'Prezado(a),\n\nSegue em anexo a Requisição Administrativa gerada conforme os procedimentos.\n\nATENÇÃO: O arquivo PDF foi baixado automaticamente no seu dispositivo. Por favor, anexe-o manualmente a esta mensagem antes de enviar.\n\nAtenciosamente,\nAgente Fiscal';
+        corpo += `\n\nO arquivo PDF da Requisição foi gerado com o nome: ${lastPdfFilename}\nPor favor, anexe-o manualmente a este e-mail (o arquivo foi baixado automaticamente ao gerar o PDF).`;
+        abrirGmailPreenchido(emailDestino, assunto, corpo);
+        if (lastPdfBlob) {
+            const url = URL.createObjectURL(lastPdfBlob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = lastPdfFilename;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            URL.revokeObjectURL(url);
+        }
+    }
+
+    function carregarMunicipios() {
+        const select = document.getElementById('municipio');
+        municipios.sort().forEach(m => { const option = document.createElement('option'); option.value = m; option.textContent = m; select.appendChild(option); });
+    }
+
+    function preencherDadosAgente(agente) {
+        if (agente) {
+            document.getElementById('agent-info').style.display = 'block';
+            document.getElementById('agent-name').textContent = agente.NOME || '';
+            document.getElementById('agent-matricula').textContent = agente.MATRICULA || '';
+            document.getElementById('agent-email').textContent = agente.EMAIL || '';
+            document.getElementById('agent-celular').textContent = agente.CELULAR || '';
+            document.getElementById('agent-inspetoria').textContent = agente.INSPETORIA || '';
+            document.getElementById('agent-endereco').textContent = agente.ENDERECO || '';
+            document.getElementById('agent-cep').textContent = agente.CEP || '';
+            document.getElementById('email').value = agente.EMAIL || '';
+            document.getElementById('email-rodape').value = agente.EMAIL || '';
+            document.getElementById('inspetoria').value = agente.INSPETORIA || '';
+            document.getElementById('endereco').value = agente.ENDERECO || '';
+            document.getElementById('cep').value = agente.CEP || '';
+            document.getElementById('matricula-agente').value = agente.MATRICULA;
+            // NÃO chamamos buscarProximoRA() aqui – o número só será gerado ao clicar em Gerar/Enviar
+        } else {
+            document.getElementById('agent-info').style.display = 'none';
+            document.getElementById('ra-number').value = '';
+        }
+    }
+
+    function realizarLogin(matricula, senha) {
+        const user = usuariosAutorizados.find(u => u.matricula === matricula && u.senha === senha);
+        if (user) {
+            const agente = buscarAgentePorMatricula(matricula);
+            if (agente) {
+                currentAgent = agente;
+                preencherDadosAgente(currentAgent);
+                document.getElementById('login-screen').style.display = 'none';
+                document.getElementById('app-container').style.display = 'block';
+                document.getElementById('login-error').style.display = 'none';
+            } else {
+                document.getElementById('login-error').textContent = 'Agente não encontrado na base.';
+                document.getElementById('login-error').style.display = 'block';
+            }
+        } else {
+            document.getElementById('login-error').style.display = 'block';
+        }
+    }
+
+    function logout() {
+        document.getElementById('login-screen').style.display = 'flex';
+        document.getElementById('app-container').style.display = 'none';
+        currentAgent = null;
+        lastPdfBlob = null;
+        document.getElementById('matricula-agente').value = '';
+        document.getElementById('agent-info').style.display = 'none';
+    }
+
+    function updatePreviewPlain() {
+        if (selectedPrefix !== 'RA03') return;
+        const texto = document.getElementById('corpo-requisicao').value;
+        const previewDiv = document.getElementById('preview-lines');
+        if (!previewDiv) return;
+        const canvas = document.createElement('canvas');
+        const ctx = canvas.getContext('2d');
+        const fontSizePt = 11;
+        const pxPerPoint = 96 / 72;
+        const fontSizePx = fontSizePt * pxPerPoint;
+        ctx.font = `bold ${fontSizePx}px Arial`;
+        const maxWidthPx = 500 * pxPerPoint;
+        function splitLinesForPreview(text) {
+            const paragraphs = text.split(/\r?\n/);
+            const lines = [];
+            for (let para of paragraphs) {
+                if (para.trim() === '') {
+                    lines.push('');
+                    continue;
+                }
+                const words = para.split(' ');
+                let currentLine = '';
+                for (let i = 0; i < words.length; i++) {
+                    const word = words[i];
+                    const testLine = currentLine ? currentLine + ' ' + word : word;
+                    const metrics = ctx.measureText(testLine);
+                    if (metrics.width <= maxWidthPx) {
+                        currentLine = testLine;
+                    } else {
+                        if (currentLine) lines.push(currentLine);
+                        currentLine = word;
+                    }
+                }
+                if (currentLine) lines.push(currentLine);
+            }
+            return lines;
+        }
+        const lines = splitLinesForPreview(texto);
+        const maxLines = 4;
+        previewDiv.innerHTML = '';
+        for (let i = 0; i < maxLines; i++) {
+            const lineDiv = document.createElement('div');
+            lineDiv.className = 'preview-line';
+            if (i < lines.length && lines[i] !== '') {
+                const textSpan = document.createElement('span');
+                textSpan.className = 'text-only';
+                textSpan.textContent = lines[i];
+                lineDiv.appendChild(textSpan);
+            } else {
+                const emptySpan = document.createElement('div');
+                emptySpan.className = 'preview-empty-line';
+                lineDiv.appendChild(emptySpan);
+            }
+            previewDiv.appendChild(lineDiv);
+        }
+    }
+
+    function updateDynamicFields() {
+        document.getElementById('field-ao-group').style.display = 'none';
+        document.getElementById('field-cnpj-group').style.display = 'none';
+        document.getElementById('field-endereco2-group').style.display = 'none';
+        document.getElementById('field-protocolo-group').style.display = 'none';
+        document.getElementById('field-at-group').style.display = 'none';
+        document.getElementById('field-ac-group').style.display = 'none';
+        document.getElementById('field-corpo-requisicao-group').style.display = 'none';
+        const previewContainer = document.getElementById('preview-corpo-container');
+        if (previewContainer) previewContainer.style.display = 'none';
+        let hasAny = false;
+        switch(selectedPrefix) {
+            case 'RA01': case 'RA04':
+                document.getElementById('field-ao-group').style.display = 'block';
+                document.getElementById('field-cnpj-group').style.display = 'block';
+                document.getElementById('field-endereco2-group').style.display = 'block';
+                hasAny = true;
+                break;
+            case 'RA02': case 'RA2.1':
+                document.getElementById('field-endereco2-group').style.display = 'block';
+                hasAny = true;
+                break;
+            case 'RA03':
+                document.getElementById('field-ao-group').style.display = 'block';
+                document.getElementById('field-endereco2-group').style.display = 'block';
+                document.getElementById('field-protocolo-group').style.display = 'block';
+                document.getElementById('field-corpo-requisicao-group').style.display = 'block';
+                if (previewContainer) previewContainer.style.display = 'block';
+                const textareaCorpo = document.getElementById('corpo-requisicao');
+                if (textareaCorpo) {
+                    textareaCorpo.removeEventListener('input', updatePreviewPlain);
+                    textareaCorpo.addEventListener('input', updatePreviewPlain);
+                    updatePreviewPlain();
+                }
+                hasAny = true;
+                break;
+            case 'RA05': case 'RA09':
+                document.getElementById('field-ao-group').style.display = 'block';
+                hasAny = true;
+                break;
+            case 'RA07':
+                document.getElementById('field-ao-group').style.display = 'block';
+                document.getElementById('field-endereco2-group').style.display = 'block';
+                document.getElementById('field-at-group').style.display = 'block';
+                hasAny = true;
+                break;
+            case 'RA06': case 'RA08': case 'RA10': case 'RA11': case 'RA12': case 'RA13': case 'RA14': case 'RA15': case 'RA16':
+                document.getElementById('field-ao-group').style.display = 'block';
+                document.getElementById('field-endereco2-group').style.display = 'block';
+                hasAny = true;
+                break;
+            case 'RA17':
+                document.getElementById('field-ao-group').style.display = 'block';
+                document.getElementById('field-ac-group').style.display = 'block';
+                hasAny = true;
+                break;
+            default: break;
+        }
+        document.getElementById('dynamic-fields-container').style.display = hasAny ? 'block' : 'none';
+    }
+
+    function setupProtocoloValidation() {
+        const protocoloInput = document.getElementById('protocolo');
+        if (protocoloInput) {
+            protocoloInput.addEventListener('input', function(e) {
+                this.value = this.value.replace(/\D/g, '');
+            });
+        }
+    }
+
+    // ============================================================
+    // 8. INICIALIZAÇÃO E EVENTOS
+    // ============================================================
+    document.addEventListener('DOMContentLoaded', function() {
+        carregarMunicipios();
+        setupProtocoloValidation();
+        document.getElementById('ano-data').value = new Date().getFullYear();
+        
+        document.getElementById('btn-acessar-sistema').addEventListener('click', () => {
+            const mat = document.getElementById('login-matricula').value.trim();
+            const sen = document.getElementById('login-senha').value;
+            realizarLogin(mat, sen);
+        });
+        document.getElementById('logout-sidebar-btn').addEventListener('click', logout);
+        document.getElementById('reset-ra-number').addEventListener('click', resetarContador);
+        document.getElementById('gerar-pdf').addEventListener('click', async () => { await generatePdf(); });
+        document.getElementById('enviar-email').addEventListener('click', async () => { await enviarEmail(); });
+        
+        const menuItems = document.querySelectorAll('.sidebar-menu li[data-template]');
+        menuItems.forEach(item => {
+            item.addEventListener('click', function() {
+                menuItems.forEach(i => i.classList.remove('active'));
+                this.classList.add('active');
+                selectedTemplate = this.getAttribute('data-template');
+                selectedTemplateName = this.textContent;
+                selectedTemplateFile = this.getAttribute('data-file');
+                selectedPrefix = this.getAttribute('data-prefix');
+                document.getElementById('document-title').textContent = this.textContent;
+                // NÃO chamamos buscarProximoRA() aqui – o número só será gerado ao clicar em Gerar/Enviar
+                updateDynamicFields();
+            });
+        });
+        document.querySelectorAll('[data-anexo]').forEach(item => {
+            item.addEventListener('click', function() {
+                const anexo = this.getAttribute('data-anexo');
+                const file = anexosFiles[anexo];
+                if (file) window.open(`templates2/${file}`, '_blank');
+                else alert('Anexo não disponível');
+            });
+        });
+        updateDynamicFields();
+    });
+</script>
+</body>
+</html>
