@@ -23,21 +23,36 @@ if (!uri) {
     process.exit(1);
 }
 
-const client = new MongoClient(uri);
+// ========== CONEXÃO COM MONGODB ==========
+// ========== CONEXÃO COM MONGODB ==========
+const uri = process.env.MONGODB_URI;
+if (!uri) {
+    console.error("❌ ERRO: Variável de ambiente MONGODB_URI não definida!");
+    process.exit(1);
+}
+
+const client = new MongoClient(uri, {
+    tls: true,
+    tlsAllowInvalidCertificates: true,      // Permite certificados autoassinados
+    tlsAllowInvalidHostnames: true,         // Ignora validação do hostname
+    tlsCiphers: 'TLSv1.2',
+    serverSelectionTimeoutMS: 10000,        // 10 segundos
+    socketTimeoutMS: 60000,                 // 60 segundos
+});
+
 let db;
 
 async function connectDB() {
     try {
         await client.connect();
-        db = client.db('contadorDB');
+        db = client.db('contadorDB');        // O banco será criado automaticamente
         console.log('✅ Conectado ao MongoDB Atlas com sucesso!');
     } catch (error) {
         console.error('❌ Falha ao conectar no MongoDB:', error);
-        process.exit(1);
+        process.exit(1);                     // Se falhar, o servidor não sobe
     }
 }
 connectDB();
-
 // -------------------------------------------
 // FUNÇÕES AUXILIARES
 // -------------------------------------------
