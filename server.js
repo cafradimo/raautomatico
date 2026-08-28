@@ -47,11 +47,6 @@ async function getNextRA(prefix, matricula) {
   return `${prefix}-${ano}${matriculaStr}-${seq}`;
 }
 
-//async function resetContador(prefix, matricula) {
-  //const ano = new Date().getFullYear();
-  //await Contador.findOneAndDelete({ prefix, matricula, ano });
-//}
-
 // ========== MIDDLEWARE E ARQUIVOS ESTÁTICOS ==========
 app.use(express.static('public'));           // Para index.html e assets
 app.use('/template', express.static('template'));     // Para os PDFs
